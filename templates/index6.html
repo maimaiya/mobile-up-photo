@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片上传系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background-color: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        .content { padding: 30px; }
+        .upload-methods { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
+        .method-item { text-align: center; flex: 1; min-width: 200px; }
+        .method-item h3 { color: #333; margin-bottom: 10px; }
+        .method-item p { color: #666; font-size: 0.9em; margin-bottom: 15px; }
+        .upload-btn { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; border-radius: 50px; cursor: pointer; font-size: 1.1em; font-weight: bold; margin: 10px; transition: all 0.3s ease; border: none; text-decoration: none; }
+        .upload-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        .hidden-input { display: none; }
+        .status-message { margin: 20px 0; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; display: none; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .device-notice { background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 12px; border-radius: 8px; margin: 10px 0; font-size: 0.9em; display: none; text-align: center; }
+        @media (max-width: 768px) { .upload-methods { flex-direction: column; } .method-item { min-width: auto; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📷 图片上传系统</h1>
+            <p>支持文件选择、拍照和批量上传</p>
+        </div>
+        <div class="content">
+            <div id="deviceNotice" class="device-notice">
+                <strong>📱 移动设备检测到：</strong>点击"拍照上传"将调用手机系统相机
+            </div>
+            <div class="upload-methods">
+                <div class="method-item">
+                    <h3>📁 选择文件</h3>
+                    <p>从设备中选择图片文件</p>
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">选择文件</button>
+                </div>
+                <div class="method-item">
+                    <h3>📸 拍照上传</h3>
+                    <p id="cameraDescription">使用摄像头拍照</p>
+                    <button class="upload-btn" id="cameraButton">打开摄像头</button>
+                </div>
+            </div>
+            <input type="file" id="fileInput" class="hidden-input" accept="image/*">
+            <input type="file" id="mobileCameraInput" class="hidden-input" accept="image/*" capture="environment">
+            <div id="statusMessage" class="status-message"></div>
+            <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3>后端状态</h3>
+                <p>服务器正在运行，请使用前端界面进行上传测试。</p>
+                <p><a href="/list_uploads" target="_blank">查看已上传文件</a></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 简化的前端代码
+        function isMobileDevice() {
+            const userAgent = navigator.userAgent;
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|Mobile|mobile/i.test(userAgent);
+        }
+        
+        function initDeviceDetection() {
+            const isMobile = isMobileDevice();
+            if (isMobile) {
+                document.getElementById('deviceNotice').style.display = 'block';
+                document.getElementById('cameraDescription').textContent = '使用手机系统相机拍照';
+                document.getElementById('cameraButton').onclick = function() {
+                    document.getElementById('mobileCameraInput').click();
+                };
+            } else {
+                document.getElementById('cameraDescription').textContent = '使用电脑摄像头拍照';
+                document.getElementById('cameraButton').onclick = function() {
+                    alert('桌面摄像头功能需要完整的前端代码');
+                };
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', initDeviceDetection);
+    </script>
+</body>
+</html>

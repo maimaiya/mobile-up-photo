@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片上传系统 - 保留原始文件名</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px dashed #4facfe;
+            border-radius: 10px;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #667eea;
+            background-color: #eef5ff;
+        }
+
+        .upload-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .upload-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 10px;
+            transition: all 0.3s ease;
+            border: none;
+            text-decoration: none;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .upload-btn:active {
+            transform: translateY(0);
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        .preview-area {
+            margin-top: 20px;
+            min-height: 200px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            background-color: white;
+        }
+
+        .preview-area h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .preview-item:hover {
+            transform: scale(1.05);
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .preview-item .filename {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            font-size: 0.9em;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .preview-item .file-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 3px;
+            font-size: 0.75em;
+            text-align: center;
+        }
+
+        .status-message {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .upload-methods {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .method-item {
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .method-item h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .method-item p {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        /* 设备检测提示 */
+        .device-notice {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 0.9em;
+            display: none;
+            text-align: center;
+        }
+
+        .filename-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .size-warning {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        /* 压缩质量选项 */
+        .quality-controls {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .quality-slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .quality-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .quality-label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .quality-details {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .upload-methods {
+                flex-direction: column;
+            }
+
+            .method-item {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📷 图片上传系统</h1>
+            <p>前端EXIF提取 + 智能文件名</p>
+        </div>
+
+        <div class="content">
+            <!-- 设备提示信息 -->
+            <div id="deviceNotice" class="device-notice">
+                <strong>📱 移动设备检测到：</strong>点击"拍照上传"将调用手机系统相机，文件名将自动保留
+            </div>
+
+            <!-- 压缩质量控制 -->
+            <div class="quality-controls">
+                <h4>🛠️ 图片压缩设置</h4>
+                <div class="quality-label">图片质量: <span id="qualityValue">85</span>%</div>
+                <div class="quality-details">
+                    分辨率比例: <span id="resolutionPercent">85</span>% |
+                    文件大小阈值: <span id="thresholdDisplay">600</span>KB
+                </div>
+                <input type="range" id="qualitySlider" class="quality-slider" min="30" max="95" value="85" step="1">
+                <div class="quality-info">
+                    <span>低质量 (文件小)</span>
+                    <span>平衡质量与大小</span>
+                    <span>高质量 (文件大)</span>
+                </div>
+                <p style="font-size: 0.8em; color: #666; margin-top: 10px;">
+                    <strong>策略：</strong>图片质量越高、分辨率越高，文件越大越清晰。小于600KB的文件不压缩。
+                </p>
+            </div>
+
+            <!-- 文件大小警告 -->
+            <div id="sizeWarning" class="size-warning" style="display: none;">
+                <strong>⚠️ 注意：</strong>检测到大文件，将自动压缩以优化上传速度
+            </div>
+
+            <!-- 文件名信息提示 -->
+            <div id="filenameInfo" class="filename-info" style="display: none;">
+                <strong>📝 文件名信息：</strong><span id="filenameText"></span>
+            </div>
+
+            <div class="upload-methods">
+                <div class="method-item">
+                    <h3>📁 选择文件</h3>
+                    <p>从设备中选择图片文件</p>
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        选择文件
+                    </button>
+                </div>
+
+                <div class="method-item">
+                    <h3>📸 拍照上传</h3>
+                    <p id="cameraDescription">使用摄像头拍照</p>
+                    <button class="upload-btn" id="cameraButton">
+                        打开摄像头
+                    </button>
+                </div>
+
+                <div class="method-item">
+                    <h3>📦 批量上传</h3>
+                    <p>一次性上传多个文件</p>
+                    <button class="upload-btn" onclick="document.getElementById('multiFileInput').click()">
+                        选择多个文件
+                    </button>
+                </div>
+            </div>
+
+            <!-- 文件选择输入 -->
+            <input type="file" id="fileInput" class="hidden-input" accept="image/*" onchange="uploadFile(this)">
+
+            <!-- 移动设备摄像头输入 -->
+            <input type="file" id="mobileCameraInput" class="hidden-input" accept="image/*" capture="environment">
+
+            <!-- 多文件输入 -->
+            <input type="file" id="multiFileInput" class="hidden-input" accept="image/*" multiple onchange="uploadMultipleFiles(this)">
+
+            <!-- 状态消息 -->
+            <div id="statusMessage" class="status-message"></div>
+
+            <!-- 加载动画 -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p id="loadingText">正在上传文件，请稍候...</p>
+            </div>
+
+            <!-- 预览区域 -->
+            <div class="preview-area">
+                <h3>📋 上传记录（显示原始文件名和保存文件名）</h3>
+                <div id="uploadHistory" class="preview-grid">
+                    <!-- 上传的文件会显示在这里 -->
+                    <p id="emptyMessage" style="text-align: center; color: #999; grid-column: 1 / -1; padding: 50px 0;">
+                        尚未上传任何文件
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.js"></script>
+    <script>
+        // ========== 配置常量 ==========
+        const COMPRESSION_THRESHOLD = 600 * 1024; // 600KB阈值
+        let compressionQuality = 85; // 默认85%质量
+
+        // ========== 初始化质量滑块 ==========
+        const qualitySlider = document.getElementById('qualitySlider');
+        const qualityValue = document.getElementById('qualityValue');
+        const resolutionPercent = document.getElementById('resolutionPercent');
+        const thresholdDisplay = document.getElementById('thresholdDisplay');
+
+        thresholdDisplay.textContent = (COMPRESSION_THRESHOLD / 1024).toFixed(0);
+
+        function updateQualityDisplay() {
+            compressionQuality = parseInt(qualitySlider.value);
+            qualityValue.textContent = compressionQuality;
+            resolutionPercent.textContent = compressionQuality; // 分辨率比例与质量相同
+            console.log('图片质量设置为:', compressionQuality + '%', '分辨率比例:', compressionQuality + '%');
+        }
+
+        qualitySlider.addEventListener('input', updateQualityDisplay);
+
+        // 初始化显示
+        updateQualityDisplay();
+
+        // ========== 智能压缩函数 ==========
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                console.log('检查文件大小:', formatFileSize(file.size));
+
+                // 如果文件小于阈值，不压缩直接返回
+                if (file.size <= COMPRESSION_THRESHOLD) {
+                    console.log('文件小于' + formatFileSize(COMPRESSION_THRESHOLD) + '，跳过压缩');
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        resolve(e.target.result);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                    return;
+                }
+
+                console.log('文件超过阈值，开始压缩...');
+
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = function() {
+                        console.log('原始图片尺寸:', img.width + 'x' + img.height);
+
+                        // 计算缩放后的尺寸（根据质量百分比）
+                        const scaleFactor = compressionQuality / 100; // 30%-95% -> 0.3-0.95
+                        let newWidth = Math.round(img.width * scaleFactor);
+                        let newHeight = Math.round(img.height * scaleFactor);
+
+                        // 确保最小尺寸
+                        if (newWidth < 100) newWidth = 100;
+                        if (newHeight < 100) newHeight = 100;
+
+                        console.log('缩放比例:', scaleFactor.toFixed(2), '新尺寸:', newWidth + 'x' + newHeight);
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = newWidth;
+                        canvas.height = newHeight;
+
+                        const ctx = canvas.getContext('2d');
+
+                        // 设置高质量渲染
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+
+                        // 绘制缩放后的图片
+                        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+                        // 使用与分辨率相同的质量百分比（但转换为0-1范围）
+                        const jpegQuality = compressionQuality / 100;
+                        console.log('JPEG质量:', jpegQuality.toFixed(2));
+
+                        // 根据文件类型选择输出格式
+                        let outputFormat = 'image/jpeg';
+                        if (file.type === 'image/png' && compressionQuality > 80) {
+                            outputFormat = 'image/png';
+                            console.log('高质量PNG，保持PNG格式');
+                        }
+
+                        // 转换为base64
+                        const compressedDataUrl = canvas.toDataURL(outputFormat, jpegQuality);
+
+                        // 计算压缩率
+                        const originalSize = file.size;
+                        const compressedSize = estimateBase64Size(compressedDataUrl);
+                        const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
+
+                        console.log('压缩完成:',
+                            '原始大小: ' + formatFileSize(originalSize),
+                            '压缩后: ' + formatFileSize(compressedSize),
+                            '压缩率: ' + compressionRatio + '%',
+                            '新尺寸: ' + newWidth + 'x' + newHeight
+                        );
+
+                        resolve(compressedDataUrl);
+                    };
+                    img.onerror = reject;
+                };
+                reader.onerror = reject;
+            });
+        }
+
+        function estimateBase64Size(base64String) {
+            // Base64编码会增加约33%的大小
+            return Math.round(base64String.length * 0.75);
+        }
+
+        // ========== 辅助函数 ==========
+
+        // 从图片文件提取EXIF拍摄时间
+        // 注意：不再在前端生成文件名（因为移动浏览器的lastModified不可靠）
+        // 只返回是否有EXIF的标记，让后端统一处理
+        async function checkHasExif(file) {
+            const exifResult = await extractExifDateTimeFromImage(file);
+            if (exifResult) {
+                console.log('✅ 检测到EXIF数据');
+                return true;
+            }
+            console.log('⚠️ 无EXIF数据，将使用文件时间');
+            return false;
+        }
+
+        // 从图片提取EXIF时间
+        function extractExifDateTimeFromImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const image = new Image();
+                    image.onload = function() {
+                        try {
+                            const exif = EXIF.getDataFrom(image, function() {
+                                const dateTimeOriginal = EXIF.getTag(this, "DateTimeOriginal");
+                                const dateTime = EXIF.getTag(this, "DateTime");
+
+                                // 获取原始文件的扩展名
+                                const ext = file.name.split('.').pop().toLowerCase();
+                                const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                                const fileExt = (validExtensions.includes(ext) ? ext : 'jpg');
+
+                                if (dateTimeOriginal) {
+                                    // 格式: "2025:03:12 14:30:22"
+                                    const parts = dateTimeOriginal.split(' ');
+                                    if (parts.length === 2) {
+                                        const datePart = parts[0].replace(/:/g, ''); // 20250312
+                                        const timePart = parts[1].replace(/:/g, ''); // 143022
+                                        resolve('IMG_' + datePart + timePart + '.' + fileExt);
+                                    } else {
+                                        resolve(null);
+                                    }
+                                } else if (dateTime) {
+                                    const parts = dateTime.split(' ');
+                                    if (parts.length === 2) {
+                                        const datePart = parts[0].replace(/:/g, '');
+                                        const timePart = parts[1].replace(/:/g, '');
+                                        resolve('IMG_' + datePart + timePart + '.' + fileExt);
+                                    } else {
+                                        resolve(null);
+                                    }
+                                } else {
+                                    resolve(null);
+                                }
+                            });
+                        } catch (error) {
+                            console.error('EXIF提取失败:', error);
+                            resolve(null);
+                        }
+                    };
+                    image.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 从文件修改时间生成文件名
+        function getFilenameFromFileTime(file) {
+            try {
+                // file.lastModified 是时间戳（毫秒）
+                const date = new Date(file.lastModified);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+
+                // 获取原始文件的扩展名
+                const ext = file.name.split('.').pop().toLowerCase();
+                const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                const fileExt = (validExtensions.includes(ext) ? ext : 'jpg');
+
+                const filename = `IMG_${year}${month}${day}${hours}${minutes}${seconds}.${fileExt}`;
+
+                console.log('📁 文件修改时间:', date.toLocaleString());
+                console.log('📁 原始文件扩展名:', ext);
+                console.log('📝 生成文件名:', filename);
+
+                return filename;
+            } catch (error) {
+                console.error('读取文件时间失败:', error);
+                return null;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            else return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        function showMessage(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = 'status-message ' + type;
+            statusEl.style.display = 'block';
+
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+
+        function showLoading(show, text = '正在上传文件，请稍候...') {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        function addToPreview(originalFilename, savedFilename, imageUrl = null, fileSize = 0) {
+            const previewGrid = document.getElementById('uploadHistory');
+            const emptyMessage = document.getElementById('emptyMessage');
+
+            if (emptyMessage) {
+                emptyMessage.style.display = 'none';
+            }
+
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
+
+            let imageSrc = imageUrl || '/static/placeholder.jpg';
+
+            // 如果文件名不同，显示保存的文件名
+            const displayFilename = originalFilename !== savedFilename ?
+                `${originalFilename} → ${savedFilename}` : savedFilename;
+
+            previewItem.innerHTML = `
+                <div class="file-info">${fileSize > 0 ? formatFileSize(fileSize) : ''}</div>
+                <img src="${imageSrc}" alt="${originalFilename}" onerror="this.src='/static/placeholder.jpg'">
+                <div class="filename" title="${displayFilename}">${displayFilename}</div>
+            `;
+
+            previewGrid.prepend(previewItem);
+        }
+
+        // ========== 设备检测 ==========
+        function isMobileDevice() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const mobileKeywords = [
+                'Android', 'webOS', 'iPhone', 'iPad', 'iPod', 'BlackBerry',
+                'Windows Phone', 'Mobile', 'mobile', 'CriOS', 'FxiOS'
+            ];
+
+            for (const keyword of mobileKeywords) {
+                if (userAgent.indexOf(keyword) !== -1) {
+                    return true;
+                }
+            }
+
+            const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isSmallScreen = window.innerWidth <= 768;
+
+            return hasTouch && isSmallScreen;
+        }
+
+        function hasCameraSupport() {
+            return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        }
+
+        // ========== DOM元素 ==========
+        const deviceNotice = document.getElementById('deviceNotice');
+        const cameraDescription = document.getElementById('cameraDescription');
+        const cameraButton = document.getElementById('cameraButton');
+        const mobileCameraInput = document.getElementById('mobileCameraInput');
+        const filenameInfo = document.getElementById('filenameInfo');
+        const filenameText = document.getElementById('filenameText');
+        const sizeWarning = document.getElementById('sizeWarning');
+
+        // ========== 初始化设备检测 ==========
+        function initDeviceDetection() {
+            const isMobile = isMobileDevice();
+            const hasCamera = hasCameraSupport();
+
+            console.log('设备检测: 移动设备=', isMobile, '摄像头支持=', hasCamera);
+
+            if (isMobile) {
+                deviceNotice.style.display = 'block';
+                cameraDescription.textContent = '使用手机系统相机拍照';
+
+                cameraButton.onclick = function() {
+                    console.log('移动设备: 调用系统相机');
+                    mobileCameraInput.click();
+                };
+
+                mobileCameraInput.onchange = function(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        console.log('移动设备拍摄的文件:', {
+                            name: file.name,
+                            size: formatFileSize(file.size),
+                            type: file.type
+                        });
+
+                        // 显示原始文件名
+                        filenameInfo.style.display = 'block';
+                        filenameText.textContent = `原始文件名: ${file.name}`;
+
+                        processMobilePhoto(file);
+                    }
+                };
+            } else {
+                cameraDescription.textContent = '使用电脑摄像头拍照';
+
+                if (hasCamera) {
+                    cameraButton.onclick = openDesktopCamera;
+                } else {
+                    cameraButton.onclick = function() {
+                        showMessage('您的浏览器不支持摄像头功能', 'error');
+                    };
+                    cameraButton.style.opacity = '0.7';
+                    cameraButton.style.cursor = 'not-allowed';
+                    cameraDescription.textContent = '浏览器不支持摄像头';
+                }
+            }
+        }
+
+        // ========== 处理移动设备照片 ==========
+        async function processMobilePhoto(file) {
+            console.log('开始处理移动设备照片，原始文件名:', file.name);
+
+            showLoading(true, '正在检查EXIF数据...');
+
+            // 检查是否有EXIF数据
+            const hasExif = await checkHasExif(file);
+
+            if (hasExif) {
+                console.log('✅ 检测到EXIF数据');
+                filenameInfo.style.display = 'block';
+                filenameInfo.textContent = `原始文件名: ${file.name} → 有EXIF数据，后端将自动提取时间`;
+            } else {
+                console.log('⚠️ 无EXIF数据');
+                filenameInfo.style.display = 'block';
+                filenameInfo.textContent = `原始文件名: ${file.name} → 无EXIF数据，将使用文件时间`;
+            }
+
+            // 显示文件大小警告（如果超过阈值）
+            if (file.size > COMPRESSION_THRESHOLD) {
+                sizeWarning.style.display = 'block';
+                sizeWarning.innerHTML = `<strong>⚠️ 注意：</strong>检测到 ${formatFileSize(file.size)} 的文件，正在压缩...<br>当前设置: 质量${compressionQuality}%，分辨率${compressionQuality}%`;
+            }
+
+            // 处理并上传文件（带压缩）
+            await processAndUploadFileWithCompression(file);
+        }
+
+        // ========== 处理带压缩的文件上传 ==========
+        async function processAndUploadFileWithCompression(file) {
+            showLoading(true, '正在处理图片...');
+
+            try {
+                // 如果文件大于阈值，进行压缩
+                if (file.size > COMPRESSION_THRESHOLD) {
+                    console.log('文件超过阈值，开始压缩...');
+
+                    // 先提取EXIF时间（在压缩前）
+                    const exifFilename = await extractExifDateTimeFromImage(file);
+                    console.log('压缩前提取EXIF:', exifFilename || '无EXIF');
+
+                    const compressedImageData = await compressImage(file);
+                    const compressedSize = estimateBase64Size(compressedImageData);
+                    console.log('文件压缩完成:', formatFileSize(compressedSize));
+
+                    showLoading(true, '正在上传文件...');
+
+                    // 预览压缩后的图片
+                    addToPreview(file.name, file.name, compressedImageData, compressedSize);
+
+                    // 上传压缩后的图片，同时传递EXIF时间
+                    const result = await uploadCompressedImage(compressedImageData, file.name, exifFilename, file.lastModified);
+
+                    if (result.success) {
+                        showMessage(
+                            `上传成功！\n原始: ${formatFileSize(file.size)}\n压缩后: ${formatFileSize(compressedSize)}\n保存为: ${result.saved_as || file.name}`,
+                            'success'
+                        );
+                        updatePreviewItem(file.name, result.saved_as || file.name, result.file_size || compressedSize);
+                    } else {
+                        showMessage(`上传失败: ${result.message || '未知错误'}`, 'error');
+                    }
+                } else {
+                    // 小文件直接上传
+                    console.log('文件小于阈值，直接上传');
+                    await processAndUploadFile(file, null);
+                }
+            } catch (error) {
+                console.error('处理文件失败:', error);
+                showMessage(`处理文件失败: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+                sizeWarning.style.display = 'none';
+                filenameInfo.style.display = 'none';
+            }
+        }
+
+        // ========== 上传压缩后的图片 ==========
+        async function uploadCompressedImage(imageData, originalFilename, exifFilename = null, fileTimestamp = null) {
+            try {
+                console.log('开始上传压缩后的图片...');
+                console.log('EXIF文件名:', exifFilename || '无');
+                console.log('文件时间戳:', fileTimestamp ? new Date(fileTimestamp).toLocaleString() : '无');
+
+                // 将Base64转换为Blob
+                const byteString = atob(imageData.split(',')[1]);
+                const mimeString = imageData.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+
+                const blob = new Blob([ab], { type: mimeString });
+
+                // 创建FormData
+                const formData = new FormData();
+                formData.append('image', blob, originalFilename);
+                formData.append('original_filename', originalFilename);
+                formData.append('quality', compressionQuality.toString());
+                formData.append('resolution', compressionQuality.toString());
+                formData.append('is_compressed', 'true');
+
+                // 传递文件时间戳（用于EXIF提取失败时的后备方案）
+                if (fileTimestamp) {
+                    formData.append('file_timestamp', fileTimestamp);
+                    console.log('✓ 传递文件时间戳给后端:', fileTimestamp, `(${new Date(fileTimestamp).toLocaleString()})`);
+                }
+
+                // 如果有EXIF文件名，传递给后端
+                if (exifFilename) {
+                    formData.append('exif_filename', exifFilename);
+                    console.log('✓ 传递EXIF文件名给后端:', exifFilename);
+                }
+
+                // 发送上传请求
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    if (response.status === 413) {
+                        throw new Error('文件仍然太大，请降低图片质量设置');
+                    }
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                return result;
+
+            } catch (error) {
+                console.error('上传失败:', error);
+                throw error;
+            }
+        }
+
+        async function processAndUploadFile(file, originalDisplayName) {
+            showLoading(true, '正在处理图片...');
+
+            try {
+                // 先提取EXIF时间（即使不压缩也需要提取）
+                const exifFilename = await extractExifDateTimeFromImage(file);
+                console.log('小文件上传 - 提取EXIF:', exifFilename || '无EXIF');
+
+                // 读取文件用于预览
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+
+                    // 预览图片
+                    const displayName = originalDisplayName || file.name;
+                    addToPreview(displayName, file.name, imageData, file.size);
+
+                    // 上传到服务器，传递EXIF文件名
+                    uploadFileWithOriginalName(file, imageData, exifFilename)
+                        .then(result => {
+                            if (result.success) {
+                                // 更新预览，显示实际保存的文件名
+                                const savedName = result.saved_as || file.name;
+
+                                showMessage(
+                                    `上传成功！\n保存为: ${savedName}`,
+                                    'success'
+                                );
+
+                                // 更新预览区域
+                                updatePreviewItem(displayName, savedName, result.file_size || file.size);
+                            } else {
+                                showMessage('上传失败: ' + (result.message || '未知错误'), 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('上传失败:', error);
+                            showMessage('上传失败: ' + error.message, 'error');
+                        })
+                        .finally(() => {
+                            showLoading(false);
+                            filenameInfo.style.display = 'none';
+                        });
+                };
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('处理文件失败:', error);
+                showMessage('处理文件失败: ' + error.message, 'error');
+                showLoading(false);
+                filenameInfo.style.display = 'none';
+            }
+        }
+
+        // ========== 上传文件并保留原始文件名 ==========
+        async function uploadFileWithOriginalName(file, imageData = null, exifFilename = null) {
+            try {
+                console.log('='.repeat(50));
+                console.log('📤 开始上传文件');
+                console.log('原始文件名:', file.name);
+                console.log('文件大小:', formatFileSize(file.size));
+                console.log('文件类型:', file.type);
+                console.log('有图像数据:', !!imageData);
+                console.log('EXIF文件名:', exifFilename || '无');
+
+                const formData = new FormData();
+
+                if (imageData) {
+                    // 如果提供了图像数据（Base64），转换为Blob
+                    console.log('📸 使用图像数据（Base64转Blob）');
+                    const byteString = atob(imageData.split(',')[1]);
+                    const mimeString = imageData.split(',')[0].split(':')[1].split(';')[0];
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+
+                    for (let i = 0; i < byteString.length; i++) {
+                        ia[i] = byteString.charCodeAt(i);
+                    }
+
+                    const blob = new Blob([ab], { type: mimeString });
+                    formData.append('image', blob, file.name);
+                    console.log('✓ 添加到FormData: image字段，文件名=', file.name);
+                } else {
+                    // 直接使用原始文件
+                    console.log('📁 使用原始文件');
+                    formData.append('file', file);
+                    console.log('✓ 添加到FormData: file字段，文件名=', file.name);
+                }
+
+                // 明确传递原始文件名
+                formData.append('original_filename', file.name);
+                console.log('✓ 添加到FormData: original_filename=', file.name);
+
+                // 传递文件时间戳（用于EXIF提取失败时的后备方案）
+                formData.append('file_timestamp', file.lastModified);
+                console.log('✓ 添加到FormData: file_timestamp=', file.lastModified, '(', new Date(file.lastModified).toLocaleString(), ')');
+
+                // 如果有EXIF文件名，传递给后端
+                if (exifFilename) {
+                    formData.append('exif_filename', exifFilename);
+                    console.log('✓ 添加到FormData: exif_filename=', exifFilename);
+                }
+
+                console.log('📤 发送请求到服务器...');
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('📥 收到响应，状态码:', response.status);
+
+                if (!response.ok) {
+                    if (response.status === 413) {
+                        throw new Error('文件太大');
+                    }
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('📋 服务器响应:', result);
+                console.log('='.repeat(50));
+                return result;
+
+            } catch (error) {
+                console.error('❌ 上传失败:', error);
+                throw error;
+            }
+        }
+
+        // ========== 更新预览项 ==========
+        function updatePreviewItem(originalName, savedName, fileSize) {
+            const previewGrid = document.getElementById('uploadHistory');
+            const items = previewGrid.querySelectorAll('.preview-item');
+
+            items.forEach(item => {
+                const filenameEl = item.querySelector('.filename');
+                if (filenameEl && filenameEl.textContent.includes(originalName)) {
+                    const displayFilename = originalName !== savedName ?
+                        `${originalName} → ${savedName}` : savedName;
+                    filenameEl.textContent = displayFilename;
+                    filenameEl.title = displayFilename;
+
+                    const infoEl = item.querySelector('.file-info');
+                    if (infoEl && fileSize > 0) {
+                        infoEl.textContent = formatFileSize(fileSize);
+                    }
+                }
+            });
+        }
+
+        // ========== 上传单个文件 ==========
+        async function uploadFile(input) {
+            if (!input.files || input.files.length === 0) {
+                return;
+            }
+
+            const file = input.files[0];
+
+            showLoading(true, '正在检查EXIF数据...');
+
+            try {
+                // 检查是否有EXIF数据
+                const hasExif = await checkHasExif(file);
+
+                if (hasExif) {
+                    filenameInfo.style.display = 'block';
+                    filenameText.textContent = `原始文件名: ${file.name} → 有EXIF数据，后端将自动提取时间`;
+                } else {
+                    filenameInfo.style.display = 'block';
+                    filenameText.textContent = `原始文件名: ${file.name} → 无EXIF数据，将使用文件时间`;
+                }
+
+                // 显示文件大小警告（如果超过阈值）
+                if (file.size > COMPRESSION_THRESHOLD) {
+                    sizeWarning.style.display = 'block';
+                    sizeWarning.innerHTML = `<strong>⚠️ 注意：</strong>检测到 ${formatFileSize(file.size)} 的文件，正在压缩...<br>当前设置: 质量${compressionQuality}%，分辨率${compressionQuality}%`;
+                }
+
+                // 根据文件大小决定是否压缩
+                await processAndUploadFileWithCompression(file);
+
+                input.value = '';
+            } catch (error) {
+                console.error('上传失败:', error);
+                showMessage(`上传失败: ${error.message}`, 'error');
+                showLoading(false);
+                filenameInfo.style.display = 'none';
+                sizeWarning.style.display = 'none';
+            }
+        }
+
+        async function processAndUploadFile(file, originalDisplayName) {
+            showLoading(true, '正在处理文件...');
+
+            try {
+                // 先提取EXIF时间（即使不压缩也需要提取）
+                const exifFilename = await extractExifDateTimeFromImage(file);
+                console.log('小文件上传 - 提取EXIF:', exifFilename || '无EXIF');
+
+                // 读取文件用于预览
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const displayName = originalDisplayName || file.name;
+                    addToPreview(displayName, file.name, e.target.result, file.size);
+                };
+                reader.readAsDataURL(file);
+
+                // 上传文件，传递EXIF文件名
+                const result = await uploadFileWithOriginalName(file, null, exifFilename);
+
+                if (result.success) {
+                    const savedName = result.saved_as || file.name;
+
+                    showMessage(
+                        `上传成功！\n保存为: ${savedName}`,
+                        'success'
+                    );
+
+                    const displayName = originalDisplayName || file.name;
+                    updatePreviewItem(displayName, savedName, result.file_size || file.size);
+                } else {
+                    showMessage(`上传失败: ${result.message || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                console.error('上传失败:', error);
+                showMessage(`上传失败: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+                filenameInfo.style.display = 'none';
+            }
+        }
+
+        // ========== 批量上传 ==========
+        async function uploadMultipleFiles(input) {
+            if (!input.files || input.files.length === 0) {
+                return;
+            }
+
+            const files = Array.from(input.files);
+
+            showLoading(true, `正在处理 ${files.length} 个文件...`);
+
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+
+                    document.getElementById('loadingText').textContent =
+                        `正在处理第 ${i + 1}/${files.length} 个文件: ${file.name}`;
+
+                    // 检查是否有EXIF数据（仅用于提示）
+                    const hasExif = await checkHasExif(file);
+                    const displayName = file.name;
+
+                    // 根据文件大小决定是否压缩
+                    if (file.size > COMPRESSION_THRESHOLD) {
+                        // 压缩大文件
+                        // 先提取EXIF时间（在压缩前）
+                        const exifFilename = await extractExifDateTimeFromImage(file);
+                        console.log('批量上传 - 压缩前提取EXIF:', exifFilename || '无EXIF');
+
+                        const compressedImageData = await compressImage(file);
+                        const compressedSize = estimateBase64Size(compressedImageData);
+
+                        // 预览压缩后的图片
+                        addToPreview(displayName, file.name, compressedImageData, compressedSize);
+
+                        // 上传压缩后的图片，同时传递EXIF时间
+                        const result = await uploadCompressedImage(compressedImageData, file.name, exifFilename, file.lastModified);
+
+                        if (result.success) {
+                            updatePreviewItem(
+                                displayName,
+                                result.saved_as || file.name,
+                                result.file_size || compressedSize
+                            );
+                        }
+                    } else {
+                        // 小文件直接上传
+                        // 先提取EXIF时间
+                        const exifFilename = await extractExifDateTimeFromImage(file);
+                        console.log('批量上传 - 小文件提取EXIF:', exifFilename || '无EXIF');
+
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            addToPreview(displayName, file.name, e.target.result, file.size);
+                        };
+                        reader.readAsDataURL(file);
+
+                        const result = await uploadFileWithOriginalName(file, null, exifFilename);
+
+                        if (result.success) {
+                            updatePreviewItem(
+                                displayName,
+                                result.saved_as || file.name,
+                                result.file_size || file.size
+                            );
+                        }
+                    }
+                }
+
+                showMessage(`成功上传 ${files.length} 个文件！`, 'success');
+                input.value = '';
+
+            } catch (error) {
+                console.error('批量上传失败:', error);
+                showMessage(`上传失败: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+                sizeWarning.style.display = 'none';
+            }
+        }
+
+        // ========== 桌面摄像头 ==========
+        function openDesktopCamera() {
+            const video = document.createElement('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+                showCameraModal(video, canvas, context, stream);
+            })
+            .catch(error => {
+                console.error('摄像头错误:', error);
+                if (error.name === 'NotAllowedError') {
+                    showMessage('摄像头权限被拒绝，请在浏览器设置中允许访问摄像头', 'error');
+                } else if (error.name === 'NotFoundError') {
+                    showMessage('未找到摄像头设备', 'error');
+                } else {
+                    showMessage(`无法访问摄像头: ${error.message}`, 'error');
+                }
+            });
+        }
+
+        function showCameraModal(video, canvas, context, stream) {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+
+            const cameraUI = document.createElement('div');
+            cameraUI.style.cssText = `
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+                border-radius: 15px;
+                padding: 20px;
+                max-width: 95%;
+                max-height: 95%;
+                text-align: center;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            `;
+
+            const title = document.createElement('h3');
+            title.textContent = '📷 拍照 (质量: ' + compressionQuality + '%, 分辨率: ' + compressionQuality + '%)';
+            title.style.cssText = `
+                color: white;
+                margin-bottom: 20px;
+                font-size: 1.5em;
+            `;
+
+            video.style.cssText = `
+                width: 100%;
+                max-width: 640px;
+                max-height: 70vh;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                border: 2px solid white;
+            `;
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.style.cssText = `
+                display: flex;
+                justify-content: center;
+                gap: 20px;
+                flex-wrap: wrap;
+            `;
+
+            const captureBtn = document.createElement('button');
+            captureBtn.innerHTML = '📸 拍照';
+            captureBtn.style.cssText = `
+                padding: 15px 30px;
+                font-size: 1.2em;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 50px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            `;
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.innerHTML = '❌ 取消';
+            cancelBtn.style.cssText = `
+                padding: 15px 30px;
+                font-size: 1.2em;
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                color: white;
+                border: none;
+                border-radius: 50px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            `;
+
+            captureBtn.onclick = () => {
+                // 计算缩放尺寸
+                const scaleFactor = compressionQuality / 100;
+                const targetWidth = Math.round(video.videoWidth * scaleFactor);
+                const targetHeight = Math.round(video.videoHeight * scaleFactor);
+
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+
+                // 高质量缩放
+                context.imageSmoothingEnabled = true;
+                context.imageSmoothingQuality = 'high';
+                context.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+                const imageData = canvas.toDataURL('image/jpeg', compressionQuality / 100);
+                stream.getTracks().forEach(track => track.stop());
+                document.body.removeChild(modal);
+
+                // 生成带时间戳的文件名
+                const timestamp = new Date().getTime();
+                const filename = `webcam_${timestamp}_q${compressionQuality}.jpg`;
+
+                processWebcamPhoto(imageData, filename);
+            };
+
+            cancelBtn.onclick = () => {
+                stream.getTracks().forEach(track => track.stop());
+                document.body.removeChild(modal);
+            };
+
+            buttonContainer.appendChild(captureBtn);
+            buttonContainer.appendChild(cancelBtn);
+
+            cameraUI.appendChild(title);
+            cameraUI.appendChild(video);
+            cameraUI.appendChild(buttonContainer);
+            modal.appendChild(cameraUI);
+
+            document.body.appendChild(modal);
+        }
+
+        function processWebcamPhoto(imageData, filename) {
+            showLoading(true, '正在处理照片...');
+
+            // 预览图片
+            addToPreview(filename, filename, imageData);
+
+            // 将Base64转换为Blob并上传
+            const byteString = atob(imageData.split(',')[1]);
+            const mimeString = imageData.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+
+            const blob = new Blob([ab], { type: mimeString });
+
+            const formData = new FormData();
+            formData.append('image', blob, filename);
+            formData.append('original_filename', filename);
+            formData.append('quality', compressionQuality.toString());
+            formData.append('resolution', compressionQuality.toString());
+            formData.append('is_compressed', 'true');
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showMessage(
+                        `上传成功！\n原始文件名: ${filename}\n保存为: ${result.saved_as || filename}`,
+                        'success'
+                    );
+                    updatePreviewItem(filename, result.saved_as || filename);
+                } else {
+                    showMessage('上传失败: ' + (result.message || '未知错误'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('上传失败:', error);
+                showMessage('上传失败: ' + error.message, 'error');
+            })
+            .finally(() => {
+                showLoading(false);
+            });
+        }
+
+        // ========== 初始化应用 ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('图片上传系统初始化（保留原始文件名版本 + 图片压缩）...');
+            console.log('压缩阈值:', formatFileSize(COMPRESSION_THRESHOLD));
+            console.log('默认图片质量:', compressionQuality + '%');
+            console.log('默认分辨率比例:', compressionQuality + '%');
+
+            initDeviceDetection();
+
+            console.log('初始化完成');
+        });
+
+        // 键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+                e.preventDefault();
+                document.getElementById('fileInput').click();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                cameraButton.click();
+            }
+        });
+    </script>
+</body>
+</html>

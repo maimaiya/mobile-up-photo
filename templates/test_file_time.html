@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件时间测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .info-box {
+            background-color: #f8f9fa;
+            border: 2px solid #4facfe;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .info-item {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            border-left: 4px solid #4facfe;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #666;
+            font-size: 1.1em;
+            word-break: break-all;
+        }
+
+        .highlight {
+            background-color: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 15px;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .note {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            color: #0d47a1;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 文件时间测试</h1>
+
+        <div class="note">
+            <strong>ℹ️ 测试说明：</strong><br>
+            选择一张图片，系统会显示文件的修改时间。请对比手机相册中显示的创建/修改时间，看是否一致。
+        </div>
+
+        <div class="upload-area">
+            <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+            <button class="btn" onclick="document.getElementById('fileInput').click()">
+                📁 选择图片
+            </button>
+        </div>
+
+        <div id="result" class="hidden">
+            <div class="info-box">
+                <h3 style="margin-bottom: 15px;">📋 文件信息</h3>
+
+                <div class="info-item">
+                    <div class="info-label">文件名</div>
+                    <div class="info-value" id="filename">-</div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">文件大小</div>
+                    <div class="info-value" id="fileSize">-</div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">文件类型</div>
+                    <div class="info-value" id="fileType">-</div>
+                </div>
+
+                <div class="info-item highlight">
+                    <div class="info-label">⏰ lastModified（原始时间戳）</div>
+                    <div class="info-value" id="timestamp">-</div>
+                </div>
+
+                <div class="info-item success">
+                    <div class="info-label">📅 转换后的时间</div>
+                    <div class="info-value" id="datetime">-</div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">🌍 本地时间格式</div>
+                    <div class="info-value" id="locale">-</div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">🔢 文件名格式（IMG_YYYYMMDDHHMMSS）</div>
+                    <div class="info-value" id="cameraFormat">-</div>
+                </div>
+
+                <div id="previewContainer" style="text-align: center;">
+                    <div class="info-label">图片预览</div>
+                    <img id="preview" class="preview" alt="预览">
+                </div>
+            </div>
+
+            <div class="note" style="margin-top: 20px;">
+                <strong>🔍 对比测试：</strong><br>
+                1. 查看手机相册中这张图片的创建/修改时间<br>
+                2. 对比上方显示的"转换后的时间"<br>
+                3. 如果一致，说明浏览器可以读取真实文件时间<br>
+                4. 如果不一致（显示的是当前时间），说明浏览器限制了访问
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            else return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        function generateCameraFilename(timestamp) {
+            const date = new Date(timestamp);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+
+            return `IMG_${year}${month}${day}${hours}${minutes}${seconds}.jpg`;
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            console.log('========== 文件信息 ==========');
+            console.log('文件名:', file.name);
+            console.log('文件大小:', file.size);
+            console.log('文件类型:', file.type);
+            console.log('lastModified:', file.lastModified);
+            console.log('lastModified (Date):', new Date(file.lastModified));
+            console.log('==============================');
+
+            // 显示文件名
+            document.getElementById('filename').textContent = file.name;
+
+            // 显示文件大小
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+
+            // 显示文件类型
+            document.getElementById('fileType').textContent = file.type || '未知';
+
+            // 显示原始时间戳
+            document.getElementById('timestamp').textContent = file.lastModified + ' 毫秒';
+
+            // 显示转换后的时间（ISO格式）
+            const date = new Date(file.lastModified);
+            document.getElementById('datetime').textContent = date.toISOString();
+
+            // 显示本地时间格式
+            document.getElementById('locale').textContent = date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
+            // 显示相机格式文件名
+            document.getElementById('cameraFormat').textContent = generateCameraFilename(file.lastModified);
+
+            // 显示预览
+            const preview = document.getElementById('preview');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // 显示结果区域
+            document.getElementById('result').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
